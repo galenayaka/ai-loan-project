@@ -1,0 +1,22 @@
+{
+  "applicant": {
+    "full_name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "monthly_income": 8500.0,
+    "employment_years": 8.5,
+    "home_ownership": "MORTGAGE",
+    "credit_history_length": 12
+  },
+  "loan": {
+    "loan_amount": 35000.0,
+    "loan_purpose": "Debt consolidation",
+    "interest_rate": 9.75,
+    "term_months": 60
+  },
+  "financial_ratios": {
+    "debt_to_income": 0.42,
+    "payment_to_income": 0.18,
+    "cash_flow_coverage": 1.45,
+    "monthly_payment": 749.32
+  }
+}
