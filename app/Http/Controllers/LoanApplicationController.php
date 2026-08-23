@@ -8,8 +8,8 @@ use App\Models\Applicant;
 use App\Models\LoanApplication;
 use App\Services\LoanUnderwritingService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 class LoanApplicationController extends Controller
 {
@@ -20,14 +20,21 @@ class LoanApplicationController extends Controller
 
     /**
      * List all loan applications with their applicant and latest assessment.
+     *
+     * Returns JSON for API clients (Accept: application/json) and a
+     * human-friendly HTML page when opened directly in a browser.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse|\Illuminate\View\View
     {
-        $applications = LoanApplication::with(['applicant'])
+        $applications = LoanApplication::with(['applicant', 'riskAssessments'])
             ->latest()
             ->paginate(15);
 
-        return LoanApplicationResource::collection($applications)->response();
+        if ($request->wantsJson()) {
+            return LoanApplicationResource::collection($applications)->response();
+        }
+
+        return view('api.applications.index', compact('applications'));
     }
 
     /**
@@ -64,16 +71,7 @@ class LoanApplicationController extends Controller
 
         // Kick off the ML assessment (outside the DB transaction to avoid
         // holding a lock during a network round-trip).
-        try {
-            $this->underwriting->assess($application);
-        } catch (RuntimeException $e) {
-            // The application remains persisted; the assessment record will be
-            // marked FAILED. Return the application with a warning so the UI can
-            // surface the fallback/retry state gracefully.
-            return (new LoanApplicationResource(
-                $application->load(['applicant', 'riskAssessments'])
-            ))->response()->setStatusCode(201);
-        }
+        $this->underwriting->assess($application);
 
         return (new LoanApplicationResource(
             $application->load(['applicant', 'riskAssessments'])
@@ -82,11 +80,18 @@ class LoanApplicationController extends Controller
 
     /**
      * Show a single loan application.
+     *
+     * Returns JSON for API clients and a human-friendly HTML page when
+     * opened directly in a browser.
      */
-    public function show(LoanApplication $loanApplication): LoanApplicationResource
+    public function show(Request $request, LoanApplication $loanApplication): LoanApplicationResource|\Illuminate\View\View
     {
-        return new LoanApplicationResource(
-            $loanApplication->load(['applicant', 'riskAssessments'])
-        );
+        $loanApplication->load(['applicant', 'riskAssessments']);
+
+        if ($request->wantsJson()) {
+            return new LoanApplicationResource($loanApplication);
+        }
+
+        return view('api.applications.show', compact('loanApplication'));
     }
 }
