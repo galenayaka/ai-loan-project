@@ -298,21 +298,15 @@
 
                         <!-- Result -->
                         <div x-show="assessment && !loading" class="p-6 space-y-8">
-                            <!-- Gauge -->
+                            <!-- Gauge (donut / progress ring) -->
                             <div class="flex flex-col items-center">
                                 <div class="relative h-52 w-52">
-                                    <div class="risk-meter-track absolute inset-0 rounded-full"></div>
-                                    <div class="absolute inset-[12px] rounded-full bg-ink-900 border border-white/10 flex flex-col items-center justify-center">
-                                        <span class="text-4xl font-semibold text-white font-mono"
-                                              x-text="assessment ? (assessment.default_probability_percent ?? (assessment.default_probability * 100)).toFixed(1) + '%' : ''"></span>
-                                        <span class="text-[9px] text-paper-600 mt-2 uppercase tracking-[0.22em]">Default&nbsp;Probability</span>
+                                    <div class="risk-meter-track absolute inset-0 rounded-full" :style="riskRingStyle"></div>
+                                    <div class="absolute inset-[12px] rounded-full bg-ink-900 border border-white/10 flex flex-col items-center justify-center z-10">
+                                        <span class="relative z-20 text-4xl font-bold text-white font-mono leading-none"
+                                              x-text="assessment ? riskPct.toFixed(1) + '%' : ''"></span>
+                                        <span class="relative z-20 text-[9px] text-paper-600 mt-2 uppercase tracking-[0.22em]">Default&nbsp;Probability</span>
                                     </div>
-                                    <!-- Needle -->
-                                    <div class="absolute inset-0"
-                                         :style="`transform: rotate(${(assessment ? (assessment.default_probability_percent ?? assessment.default_probability * 100) : 0) * 3.6 - 270}deg)`">
-                                        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full h-[42%] w-px bg-white origin-bottom"></div>
-                                    </div>
-                                    <div class="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"></div>
                                 </div>
 
                                 <div class="mt-6 grid grid-cols-2 w-full border border-white/10 divide-x divide-white/10">
@@ -506,6 +500,18 @@
                     const income = Number(this.form.monthly_income) || 0;
                     if (income <= 0) return 0;
                     return this.payment / income;
+                },
+
+                get riskPct() {
+                    const raw = this.assessment
+                        ? (this.assessment.default_probability_percent ?? this.assessment.default_probability * 100)
+                        : 0;
+                    return Math.max(0, Math.min(100, Number(raw) || 0));
+                },
+
+                get riskRingStyle() {
+                    const angle = this.riskPct * 3.6;
+                    return `background: conic-gradient(from -90deg, #9ca3af 0deg, #ffffff ${angle}deg, #1a1a1a ${angle}deg 360deg);`;
                 },
 
                 // Monochrome state treatment: solid / outline / hatch.
